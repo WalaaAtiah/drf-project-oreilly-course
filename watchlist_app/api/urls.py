@@ -1,13 +1,20 @@
 from django.urls import path,include
-from .views import Watch_list,Watch_details,StreamPlat_list,StreamPlat_Detail,Review_list,Review_Detail,MovieReview_list,MovieReview_Create
+from .views import Watch_list,Watch_details,Review_list,Review_Detail,MovieReview_list,MovieReview_Create,StreamPlatView
+from rest_framework.routers import DefaultRouter
+############################################# for router ###########################################
 
-############################################# for Watchlist module ###########################################
+router = DefaultRouter()
+router.register(r'stream', StreamPlatView, basename='streamplatform')
+
+
+############################################# for normal urls ###########################################
 urlpatterns = [
     path('movie/',Watch_list.as_view(), name='Watch-list'),
     path('movie/<int:pk>/',Watch_details.as_view(), name='Watch-details'),
     
-    path('stream/',StreamPlat_list.as_view(), name='StreamPlat-list'),
-    path('stream/<int:pk>',StreamPlat_Detail.as_view(), name='StreamPlat_Detail'),
+    path('',include(router.urls)),
+    # path('stream/',StreamPlat_list.as_view(), name='StreamPlat-list'),
+    # path('stream/<int:pk>',StreamPlat_Detail.as_view(), name='StreamPlat_Detail'),
     
     path('review/',Review_list.as_view(), name='Review_list'),
     path('review/<int:pk>',Review_Detail.as_view(), name='Review_Detail'),

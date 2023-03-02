@@ -25,15 +25,22 @@ class WatchSerializer(serializers.ModelSerializer):
       
 ############################################# for StreamPlatform module ###########################################
 
-# type :serializers.HyperlinkedModelSerializer in the class  
-class StreamPlatSerializer(serializers.HyperlinkedModelSerializer):
-   WatchList=WatchSerializer(many=True,read_only=True)     #render hole object  
-   url = serializers.HyperlinkedIdentityField(view_name="StreamPlat_Detail")
+#type :serializers.ModelSerializer in the class  
+class StreamPlatSerializer(serializers.ModelSerializer):
+   WatchList=WatchSerializer(many=True,read_only=True)     #render hole object   
    class Meta:
       model=StreamPlatform
       fields="__all__"
       
-      
+# type :serializers.HyperlinkedModelSerializer in the class  
+# class StreamPlatSerializer(serializers.HyperlinkedModelSerializer):
+#    WatchList=WatchSerializer(many=True,read_only=True)     #render hole object  
+#    url = serializers.HyperlinkedIdentityField(view_name="StreamPlat_Detail")
+   
+#    class Meta:
+#       model=StreamPlatform
+#       fields="__all__"
+          
       
       
       

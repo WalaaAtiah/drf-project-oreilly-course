@@ -6,20 +6,25 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view #for function type
 from rest_framework import status,generics,mixins
 from rest_framework.views import APIView #for class type
-
+from rest_framework import viewsets
+from django.shortcuts import get_object_or_404
 ################################## for Review module   Using  generic concreate view class ###########################################
 
 class Review_list(generics.ListCreateAPIView):
+    '''
+    this class to see all the review
+    '''
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
 
-    
-    
 
 class Review_Detail(generics.RetrieveUpdateDestroyAPIView):
+    '''
+    this class to see specific review
+    '''
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    
+ 
     
 class MovieReview_list(generics.ListCreateAPIView):
     '''
@@ -77,53 +82,85 @@ class MovieReview_Create(generics.CreateAPIView):
 #         return self.destroy(request, *args, **kwargs)
 
 ############################################# for StreamPlatform module ###########################################
+# use viewset and router to creat stream palt
+class StreamPlatView(viewsets.ModelViewSet):
+   
+    """
+    This viewset automatically provides `list`, `create`, `retrieve`,
+    `update` and `destroy` actions.
 
+    Additionally we also provide an extra `highlight` action.
+    """
+    queryset = StreamPlatform.objects.all()
+    serializer_class = StreamPlatSerializer
+    
+    
+
+
+# use viewset and router to creat stream palt
+# class StreamPlatView(viewsets.ViewSet):
+#     """
+#     A simple ViewSet for listing or retrieving users.
+#     """
+#     def list(self, request):
+#         queryset = StreamPlatform.objects.all()
+#         serializer = StreamPlatSerializer(queryset, many=True)
+#         return Response(serializer.data)
+
+#     def retrieve(self, request, pk=None):
+#         queryset = StreamPlatform.objects.all()
+#         watchlist = get_object_or_404(queryset, pk=pk)
+#         serializer = StreamPlatSerializer(watchlist)
+#         return Response(serializer.data)
+    
+    
+    
 #type :class base views +serializers.serializer
 
-class StreamPlat_list(APIView):
-    def get(self, request):
-        stream=StreamPlatform.objects.all()
-        serializer=StreamPlatSerializer(stream,many=True,context={'request': request} ) 
-        # serializer=StreamPlatSerializer(stream,many=True ,context={'request': request}) #for HyperlinkedRelatedField (serializer relation) and HyperlinkedModelSerializer class
-        return Response(serializer.data)
+# class StreamPlat_list(APIView):
+#     def get(self, request):
+#         stream=StreamPlatform.objects.all()
+#         serializer=StreamPlatSerializer(stream,many=True,context={'request': request} ) 
+#         # serializer=StreamPlatSerializer(stream,many=True ,context={'request': request}) #for HyperlinkedRelatedField (serializer relation) and HyperlinkedModelSerializer class
+#         return Response(serializer.data)
     
-    def post(self,request):
-        serializer=StreamPlatSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        else:
-            return Response(serializer.errors)
+#     def post(self,request):
+#         serializer=StreamPlatSerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data)
+#         else:
+#             return Response(serializer.errors)
         
     
-class StreamPlat_Detail(APIView):
-    def get(self,request,pk):
-        try:
-            stream=StreamPlatform.objects.get(pk=pk)
-        except Movie.DoesNotExist:
-            return Response({'Error':'Movie not found'},status=status.HTTP_404_NOT_FOUND)
-        serializer=StreamPlatSerializer(stream,context={'request': request})   #for HyperlinkedRelatedField (serializer relation) and HyperlinkedModelSerializer class
-        # serializer=StreamPlatSerializer(stream)
-        return Response(serializer.data)
+# class StreamPlat_Detail(APIView):
+#     def get(self,request,pk):
+#         try:
+#             stream=StreamPlatform.objects.get(pk=pk)
+#         except Movie.DoesNotExist:
+#             return Response({'Error':'Movie not found'},status=status.HTTP_404_NOT_FOUND)
+#         serializer=StreamPlatSerializer(stream,context={'request': request})   #for HyperlinkedRelatedField (serializer relation) and HyperlinkedModelSerializer class
+#         # serializer=StreamPlatSerializer(stream)
+#         return Response(serializer.data)
     
-    def put(self,request,pk):
-        stream=StreamPlatform.objects.get(pk=pk)
-        serializer=StreamPlatSerializer(stream,data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        else:
-            return Response(serializer.errors)
+#     def put(self,request,pk):
+#         stream=StreamPlatform.objects.get(pk=pk)
+#         serializer=StreamPlatSerializer(stream,data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data)
+#         else:
+#             return Response(serializer.errors)
         
-    def delete(self,request,pk):   
-        stream=StreamPlatform.objects.get(pk=pk)
-        stream.delete()
-        # return status for spacific movie aafter delete it
-        return Response(status=status.HTTP_204_NO_CONTENT)
-        # return the list of movie 
-        streams=Movie.objects.all()
-        serializer=StreamPlatSerializer(movies,many=True)
-        return Response(serializer.data)
+#     def delete(self,request,pk):   
+#         stream=StreamPlatform.objects.get(pk=pk)
+#         stream.delete()
+#         # return status for spacific movie aafter delete it
+#         return Response(status=status.HTTP_204_NO_CONTENT)
+#         # return the list of movie 
+#         streams=Movie.objects.all()
+#         serializer=StreamPlatSerializer(movies,many=True)
+#         return Response(serializer.data)
 
 
 
