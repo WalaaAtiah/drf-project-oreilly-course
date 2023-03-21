@@ -6,6 +6,7 @@ from watchlist_app.models import WatchList,StreamPlatform,Review
 # type :serializers.Moduleserializer in the class
 
 class ReviewSerializer(serializers.ModelSerializer):
+   review_user=serializers.StringRelatedField()
    
    class Meta:
       model=Review

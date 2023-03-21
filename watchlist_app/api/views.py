@@ -1,21 +1,29 @@
 
+from django.shortcuts import get_object_or_404
 from django.shortcuts import render
-from watchlist_app.models import Movie,WatchList,StreamPlatform,Review
-from .serializers import WatchSerializer,StreamPlatSerializer,ReviewSerializer
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.decorators import api_view #for function type
 from rest_framework import status,generics,mixins
 from rest_framework.views import APIView #for class type
 from rest_framework import viewsets
-from django.shortcuts import get_object_or_404
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
+
+
+from watchlist_app.models import Movie,WatchList,StreamPlatform,Review
+from .serializers import WatchSerializer,StreamPlatSerializer,ReviewSerializer
+from .permission import IsAdminORReadOnly,IsOwnerORreadOnly
+
+
 ################################## for Review module   Using  generic concreate view class ###########################################
 
-class Review_list(generics.ListCreateAPIView):
+class Review_list(generics.ListAPIView):
     '''
     this class to see all the review
     '''
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
+    permission_classes=[IsAuthenticatedOrReadOnly]
 
 
 class Review_Detail(generics.RetrieveUpdateDestroyAPIView):
@@ -24,51 +32,42 @@ class Review_Detail(generics.RetrieveUpdateDestroyAPIView):
     '''
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
- 
+    permission_classes=[IsOwnerORreadOnly]
     
-class MovieReview_list(generics.ListCreateAPIView):
+class MovieReview_list(generics.ListAPIView):
     '''
     this class to see all the review in particular movie (watch)
     '''
     serializer_class = ReviewSerializer
+    permission_classes=[IsAuthenticatedOrReadOnly]
     def get_queryset(self):
         pk=self.kwargs['pk']
-        # print(pk)
         return Review.objects.filter(watchlist=pk)
     
-    def perform_create(self, serializer):
-        pk=self.kwargs.get("pk")
-        print(pk)
-        movie=WatchList.objects.get(pk=pk)
-        serializer.save(watchlist=movie)
+
     
 class MovieReview_Create(generics.CreateAPIView):
     '''
     this class to craet a review in particular movie (watch)
     '''
     serializer_class = ReviewSerializer
+    queryset = Review.objects.all()
+    permission_classes=[IsAuthenticatedOrReadOnly]
     
     def perform_create(self, serializer):
         pk=self.kwargs.get("pk")
-        print(pk)
         movie=WatchList.objects.get(pk=pk)
-        serializer.save(watchlist=movie)
+        userReview=self.request.user
+        TheUserHaveReview=Review.objects.filter(watchlist=movie,review_user=userReview)
+        if TheUserHaveReview.exists():
+            raise ValidationError('you have already review in this movie you can update it')
+        
+        movie.avg_rating=(movie.avg_rating*movie.number_rating+serializer.validated_data['rating'])/(movie.number_rating+1)
+        movie.number_rating+=1
+        movie.save()
+        serializer.save(watchlist=movie,review_user=userReview)
 
     
-################################## for Review module   Using mixins ###########################################
-
-# class Review_list(mixins.ListModelMixin,mixins.CreateModelMixin,generics.GenericAPIView):
-#     queryset = Review.objects.all()
-#     serializer_class = ReviewSerializer
-
-#     def get(self, request, *args, **kwargs):
-#         return self.list(request, *args, **kwargs)
-
-#     def post(self, request, *args, **kwargs):
-#         return self.create(request, *args, **kwargs)
-    
-
-# class Review_Detail(mixins.RetrieveModelMixin,mixins.UpdateModelMixin,mixins.DestroyModelMixin,generics.GenericAPIView):
 #     queryset = Review.objects.all()
 #     serializer_class = ReviewSerializer
 
@@ -97,6 +96,61 @@ class StreamPlatView(viewsets.ModelViewSet):
     
 
 
+
+
+
+############################################# for Watchlist module  ###########################################
+
+#type :class base views +serializers.serializer
+
+class Watch_list(APIView):
+    permission_classes=[IsAdminORReadOnly]
+    def get(self, request):
+        movies=WatchList.objects.all()
+        serializer=WatchSerializer(movies,many=True)
+        return Response(serializer.data)
+    
+    def post(self,request):
+        serializer=WatchSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors)
+        
+    
+class Watch_details(APIView):
+    permission_classes=[IsAdminORReadOnly]
+    def get(self,request,pk):
+        try:
+            movie=WatchList.objects.get(pk=pk)
+        except Movie.DoesNotExist:
+            return Response({'Error':'Movie not found'},status=status.HTTP_404_NOT_FOUND)
+        serializer=WatchSerializer(movie)
+        return Response(serializer.data)
+    
+    def put(self,request,pk):
+        movie=WatchList.objects.get(pk=pk)
+        serializer=WatchSerializer(movie,data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        else:
+            return Response(serializer.errors)
+        
+    def delete(self,request,pk):   
+        movie=WatchList.objects.get(pk=pk)
+        movie.delete()
+        # return status for spacific movie aafter delete it
+        return Response(status=status.HTTP_204_NO_CONTENT)
+        # return the list of movie 
+        movies=Movie.objects.all()
+        serializer=WatchSerializer(movies,many=True)
+        return Response(serializer.data)
+
+
+
+############################################# for StreamPlatform module ###########################################
 # use viewset and router to creat stream palt
 # class StreamPlatView(viewsets.ViewSet):
 #     """
@@ -162,59 +216,20 @@ class StreamPlatView(viewsets.ModelViewSet):
 #         serializer=StreamPlatSerializer(movies,many=True)
 #         return Response(serializer.data)
 
+################################## for Review module   Using mixins ###########################################
 
+# class Review_list(mixins.ListModelMixin,mixins.CreateModelMixin,generics.GenericAPIView):
+#     queryset = Review.objects.all()
+#     serializer_class = ReviewSerializer
 
+#     def get(self, request, *args, **kwargs):
+#         return self.list(request, *args, **kwargs)
 
-############################################# for Watchlist module  ###########################################
-
-#type :class base views +serializers.serializer
-
-class Watch_list(APIView):
-    def get(self, request):
-        movies=WatchList.objects.all()
-        serializer=WatchSerializer(movies,many=True)
-        return Response(serializer.data)
+#     def post(self, request, *args, **kwargs):
+#         return self.create(request, *args, **kwargs)
     
-    def post(self,request):
-        serializer=WatchSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        else:
-            return Response(serializer.errors)
-        
-    
-class Watch_details(APIView):
-    def get(self,request,pk):
-        try:
-            movie=WatchList.objects.get(pk=pk)
-        except Movie.DoesNotExist:
-            return Response({'Error':'Movie not found'},status=status.HTTP_404_NOT_FOUND)
-        serializer=WatchSerializer(movie)
-        return Response(serializer.data)
-    
-    def put(self,request,pk):
-        movie=WatchList.objects.get(pk=pk)
-        serializer=WatchSerializer(movie,data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        else:
-            return Response(serializer.errors)
-        
-    def delete(self,request,pk):   
-        movie=WatchList.objects.get(pk=pk)
-        movie.delete()
-        # return status for spacific movie aafter delete it
-        return Response(status=status.HTTP_204_NO_CONTENT)
-        # return the list of movie 
-        movies=Movie.objects.all()
-        serializer=WatchSerializer(movies,many=True)
-        return Response(serializer.data)
 
-
-
-
+# class Review_Detail(mixins.RetrieveModelMixin,mixins.UpdateModelMixin,mixins.DestroyModelMixin,generics.GenericAPIView):
 
 #*******************************************************************************************************************
 ################################################## for movie module ######################################

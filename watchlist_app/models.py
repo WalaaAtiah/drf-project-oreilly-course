@@ -1,6 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator,MaxValueValidator
-
+from django.contrib.auth.models import User
 
 # chabter 5:update module
 
@@ -18,13 +18,13 @@ class StreamPlatform (models.Model):
 
 
 class WatchList (models.Model):
-    tital = models.CharField(
-        max_length=50, help_text="the title of the movie ", default="Title")
-    plateform = models.ForeignKey(
-        StreamPlatform, on_delete=models.CASCADE, related_name="WatchList")
+    tital = models.CharField(max_length=50, help_text="the title of the movie ", default="Title")
+    plateform = models.ForeignKey(StreamPlatform, on_delete=models.CASCADE, related_name="WatchList")
     storyline = models.CharField(max_length=200, default="description ")
     active = models.BooleanField(default=True)
     created = models.DateTimeField(auto_now_add=True)
+    number_rating=models.IntegerField(default=0)
+    avg_rating=models.FloatField(default=0)
 
     def __str__(self):
         return self.tital
@@ -32,6 +32,7 @@ class WatchList (models.Model):
 # 5:Serializer Relations Continued
 # table to add review to the movie every movie hav mult review
 class Review (models.Model):
+    review_user=models.ForeignKey(User,on_delete=models.CASCADE)
     rating = models.PositiveIntegerField(validators=[MinValueValidator(1),MaxValueValidator(5)])
     description = models.CharField(max_length=200,null=True )
     created = models.DateTimeField(auto_now_add=True)
