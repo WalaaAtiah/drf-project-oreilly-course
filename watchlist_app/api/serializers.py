@@ -7,20 +7,27 @@ from watchlist_app.models import WatchList,StreamPlatform,Review
 
 class ReviewSerializer(serializers.ModelSerializer):
    review_user=serializers.StringRelatedField()
-   
    class Meta:
       model=Review
       fields="__all__"
+      extra_kwargs={'watchlist':{'read_only':True},}
       
 
 ############################################# for Watchlist module ###########################################
 # type :serializers.Moduleserializer in the class
 
 class WatchSerializer(serializers.ModelSerializer):
-   Review=ReviewSerializer(many=True,read_only=True)     #render hole object  see all review in each movie 
+   # Review=ReviewSerializer(many=True,read_only=True) #render hole object  see all review in each movie 
+   plateform=serializers.CharField(source='plateform.name')
    class Meta:
       model=WatchList
       fields="__all__"
+   
+   def validate_tital(self, value):
+      if WatchList.objects.filter(tital=value).exists():      
+         raise serializers.ValidationError("ther is movie with same name")
+      return value
+      
       
       
       
